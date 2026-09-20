@@ -35,6 +35,7 @@ func (lista *listaEnlazada[T]) EstaVacia() bool {
 
 func (lista *listaEnlazada[T]) InsertarPrimero(valor T) {
 	nuevoNodo := crearNodo(valor)
+
 	nuevoNodo.siguiente = lista.primero
 	lista.primero = nuevoNodo
 
@@ -60,7 +61,7 @@ func (lista *listaEnlazada[T]) InsertarUltimo(valor T) {
 
 func (lista *listaEnlazada[T]) BorrarPrimero() T {
 	if lista.EstaVacia() {
-		panic("La lista está vacía")
+		panic("La lista esta vacia")
 	}
 
 	valor := lista.primero.valor
