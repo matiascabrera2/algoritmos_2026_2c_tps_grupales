@@ -113,3 +113,54 @@ func (lista *listaEnlazada[T]) Iterador() IteradorLista[T] {
 		anterior: nil,
 	}
 }
+
+func (iterador *iteradorExterno[T]) VerActual() T {
+
+	return iterador.actual.valor
+}
+
+func (iterador *iteradorExterno[T]) HayAlgoMas() bool {
+	return iterador.actual.siguiente != nil
+}
+
+func (iterador *iteradorExterno[T]) Avanzar() {
+	if !iterador.HayAlgoMas() {
+		panic("Llegaste al final de la lista")
+	}
+	iterador.anterior = iterador.actual
+	iterador.actual = iterador.actual.siguiente
+}
+
+func (iterador *iteradorExterno[T]) Insertar(valor T) {
+	nuevoNodo := crearNodo(valor)
+	if iterador.actual == nil {
+		iterador.actual = nuevoNodo
+		iterador.lista.primero = iterador.actual
+		iterador.lista.largo++
+	} else {
+		if !iterador.HayAlgoMas() {
+			iterador.lista.ultimo = nuevoNodo
+		}
+		iterador.anterior = iterador.actual
+		iterador.anterior.siguiente = nuevoNodo
+		iterador.actual = nuevoNodo
+		iterador.lista.largo++
+	}
+}
+
+func (iterador *iteradorExterno[T]) Borrar() T {
+	aux := iterador.actual
+	if !iterador.HayAlgoMas() {
+		iterador.lista.ultimo = iterador.anterior
+		iterador.actual = iterador.lista.ultimo
+	} else {
+		iterador.actual = iterador.actual.siguiente
+	}
+	if iterador.anterior == nil {
+		iterador.lista.primero = iterador.actual.siguiente
+	}
+
+	iterador.lista.largo--
+	return aux.valor
+
+}
