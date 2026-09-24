@@ -6,9 +6,11 @@ type Lista[T any] interface {
 	EstaVacia() bool
 
 	// InsertarPrimero agrega un elemento al principio de la lista.
+	// Si la lista está vacía, el elemento agregado será también el último.
 	InsertarPrimero(T)
 
 	// InsertarUltimo agrega un elemento al final de la lista.
+	// Si la lista está vacía, el elemento agregado será también el primero.
 	InsertarUltimo(T)
 
 	// BorrarPrimero saca el primer elemento de la lista y lo devuelve. Si la lista
@@ -30,7 +32,7 @@ type Lista[T any] interface {
 	// último, hasta recorrerla entera o hasta que visitar devuelva false.
 	Iterar(visitar func(T) bool)
 
-	// Iterador devuelve un IteradorLista posicionado al principio de la lista.
+	// Iterador devuelve un iterador externo de tipo IteradorLista para recorrer la lista de primero a último.
 	Iterador() IteradorLista[T]
 }
 
@@ -51,7 +53,7 @@ type IteradorLista[T any] interface {
 	// iterador queda parado en el elemento recién insertado.
 	Insertar(T)
 
-	// Borrar saca el elemento en la posición actual y lo devuelve; el iterador
+	// Borrar saca el elemento en la posición actual y lo devuelve. El iterador
 	// queda parado en el elemento siguiente. Si ya terminó de iterar, entra en
 	// pánico con un mensaje "El iterador termino de iterar".
 	Borrar() T
