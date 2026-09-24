@@ -77,7 +77,7 @@ func (lista *listaEnlazada[T]) BorrarPrimero() T {
 
 func (lista *listaEnlazada[T]) VerPrimero() T {
 	if lista.EstaVacia() {
-		panic("La lista está vacía")
+		panic("La lista esta vacia")
 	}
 
 	return lista.primero.valor
@@ -85,7 +85,7 @@ func (lista *listaEnlazada[T]) VerPrimero() T {
 
 func (lista *listaEnlazada[T]) VerUltimo() T {
 	if lista.EstaVacia() {
-		panic("La lista está vacía")
+		panic("La lista esta vacia")
 	}
 
 	return lista.ultimo.valor
@@ -114,18 +114,20 @@ func (lista *listaEnlazada[T]) Iterador() IteradorLista[T] {
 	}
 }
 
-func (iterador *iteradorExterno[T]) VerActual() T {
-
-	return iterador.actual.valor
+func (iterador *iteradorExterno[T]) HayAlgoMas() bool {
+	return iterador.actual != nil
 }
 
-func (iterador *iteradorExterno[T]) HayAlgoMas() bool {
-	return iterador.actual.siguiente != nil
+func (iterador *iteradorExterno[T]) VerActual() T {
+	if !iterador.HayAlgoMas() {
+		panic("El iterador termino de iterar")
+	}
+	return iterador.actual.valor
 }
 
 func (iterador *iteradorExterno[T]) Avanzar() {
 	if !iterador.HayAlgoMas() {
-		panic("Llegaste al final de la lista")
+		panic("El iterador termino de iterar")
 	}
 	iterador.anterior = iterador.actual
 	iterador.actual = iterador.actual.siguiente
@@ -133,34 +135,41 @@ func (iterador *iteradorExterno[T]) Avanzar() {
 
 func (iterador *iteradorExterno[T]) Insertar(valor T) {
 	nuevoNodo := crearNodo(valor)
-	if iterador.actual == nil {
-		iterador.actual = nuevoNodo
-		iterador.lista.primero = iterador.actual
-		iterador.lista.largo++
+	nuevoNodo.siguiente = iterador.actual // conserva lo que había después
+
+	if iterador.anterior == nil {
+		iterador.lista.primero = nuevoNodo
 	} else {
-		if !iterador.HayAlgoMas() {
-			iterador.lista.ultimo = nuevoNodo
-		}
-		iterador.anterior = iterador.actual
 		iterador.anterior.siguiente = nuevoNodo
-		iterador.actual = nuevoNodo
-		iterador.lista.largo++
 	}
+
+	if iterador.actual == nil { // insertando al final
+		iterador.lista.ultimo = nuevoNodo
+	}
+
+	iterador.actual = nuevoNodo
+	iterador.lista.largo++
 }
 
 func (iterador *iteradorExterno[T]) Borrar() T {
-	aux := iterador.actual
 	if !iterador.HayAlgoMas() {
-		iterador.lista.ultimo = iterador.anterior
-		iterador.actual = iterador.lista.ultimo
-	} else {
-		iterador.actual = iterador.actual.siguiente
+		panic("El iterador termino de iterar")
 	}
+
+	valor := iterador.actual.valor
+	siguiente := iterador.actual.siguiente
+
 	if iterador.anterior == nil {
-		iterador.lista.primero = iterador.actual.siguiente
+		iterador.lista.primero = siguiente
+	} else {
+		iterador.anterior.siguiente = siguiente
 	}
 
-	iterador.lista.largo--
-	return aux.valor
+	if siguiente == nil {
+		iterador.lista.ultimo = iterador.anterior
+	}
 
+	iterador.actual = siguiente
+	iterador.lista.largo--
+	return valor
 }
