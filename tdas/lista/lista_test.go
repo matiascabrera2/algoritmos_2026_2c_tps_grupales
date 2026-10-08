@@ -33,13 +33,18 @@ func insertarUltimoYBorrarPrimeroEnOrden[T any](t *testing.T, valores []T) {
 	require.Equal(t, valores[len(valores)-1], lista.VerUltimo())
 	verificarContenido(t, lista, valores)
 
-	for _, v := range valores {
+	for i, v := range valores {
+		require.Equal(t, len(valores)-i, lista.Largo())
+		require.Equal(t, valores[i], lista.VerPrimero())
+		require.Equal(t, valores[len(valores)-1], lista.VerUltimo())
 		require.Equal(t, v, lista.VerPrimero())
 		require.Equal(t, v, lista.BorrarPrimero())
 	}
 
 	require.True(t, lista.EstaVacia())
 }
+
+/* Test de Iterar() */
 
 /* Casos básicos */
 
@@ -103,7 +108,8 @@ func TestListaVaciadaSeComportaComoRecienCreada(t *testing.T) {
 	lista.InsertarUltimo(3)
 
 	for !lista.EstaVacia() {
-		lista.BorrarPrimero()
+		aux := lista.VerPrimero()
+		require.Equal(t, aux, lista.BorrarPrimero())
 	}
 
 	require.True(t, lista.EstaVacia())
@@ -125,10 +131,12 @@ func TestVolumen(t *testing.T) {
 		require.Equal(t, 0, lista.VerPrimero())
 		require.Equal(t, i, lista.VerUltimo())
 		require.Equal(t, i+1, lista.Largo())
+		require.False(t, lista.EstaVacia())
 	}
 
 	for i := 0; i < VOLUMEN; i++ {
 		require.Equal(t, i, lista.VerPrimero())
+		require.False(t, lista.EstaVacia())
 		require.Equal(t, i, lista.BorrarPrimero())
 	}
 
@@ -149,8 +157,29 @@ func TestIterarInterno(t *testing.T) {
 		visitados = append(visitados, v)
 		return true
 	})
-
+	require.Equal(t, len(visitados), lista.Largo())
+	require.Equal(t, visitados[0], lista.VerPrimero())
+	require.Equal(t, visitados[len(visitados)-1], lista.VerUltimo())
 	require.Equal(t, []int{10, 20, 30, 40}, visitados)
+}
+
+func TestIterarInternoListaCambiada(t *testing.T) {
+	lista := TDALista.CrearListaEnlazada[int]()
+	lista.InsertarPrimero(10)
+	lista.InsertarUltimo(15)
+	lista.InsertarPrimero(5)
+
+	lista.BorrarPrimero()
+
+	var visitados []int
+	lista.Iterar(func(v int) bool {
+		visitados = append(visitados, v)
+		return true
+	})
+
+	require.Equal(t, []int{10, 15}, visitados)
+	require.Equal(t, visitados[0], lista.VerPrimero())
+
 }
 
 func TestIterarInternoConCorte(t *testing.T) {
@@ -195,6 +224,7 @@ func TestIteradorInsertarAlPrincipio(t *testing.T) {
 	verificarContenido(t, lista, []int{99, 1, 2, 3})
 	require.Equal(t, 99, iter.VerActual())
 	require.Equal(t, 99, lista.VerPrimero())
+	require.Equal(t, 3, lista.VerUltimo())
 }
 
 func TestIteradorInsertarAlFinal(t *testing.T) {
@@ -202,10 +232,11 @@ func TestIteradorInsertarAlFinal(t *testing.T) {
 	lista.InsertarUltimo(1)
 	lista.InsertarUltimo(2)
 	lista.InsertarUltimo(3)
-
+	contador := 0
 	iter := lista.Iterador()
-	for iter.HayAlgoMas() {
+	for contador != lista.Largo() {
 		iter.Avanzar()
+		contador++
 	}
 
 	iter.Insertar(99)
@@ -213,6 +244,7 @@ func TestIteradorInsertarAlFinal(t *testing.T) {
 	verificarContenido(t, lista, []int{1, 2, 3, 99})
 	require.Equal(t, 99, lista.VerUltimo())
 	require.Equal(t, 99, iter.VerActual())
+	require.Equal(t, 1, lista.VerPrimero())
 }
 
 func TestIteradorInsertarEnElMedio(t *testing.T) {
@@ -325,11 +357,17 @@ func TestVolumenIteradorInsertarYBorrarEnElMedio(t *testing.T) {
 
 	for i := 0; i < VOLUMEN; i++ {
 		lista.InsertarUltimo(i)
+		require.Equal(t, i+1, lista.Largo())
+		require.False(t, lista.EstaVacia())
+		require.Equal(t, i, lista.VerUltimo())
+		require.Equal(t, 0, lista.VerPrimero())
 	}
 
 	iter := lista.Iterador()
 	for i := 0; i < VOLUMEN/2; i++ {
+		require.True(t, iter.VerActual() == i)
 		iter.Avanzar()
+		require.True(t, iter.HayAlgoMas())
 	}
 
 	iter.Insertar(-1)

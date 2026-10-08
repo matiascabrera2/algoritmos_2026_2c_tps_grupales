@@ -17,12 +17,11 @@ type iteradorExterno[T any] struct {
 	anterior *nodoLista[T]
 }
 
+const _PANIC_LISTA_VACIA = "La lista esta vacia"
+const _PANIC_FIN_ITERADOR = "El iterador termino de iterar"
+
 func CrearListaEnlazada[T any]() Lista[T] {
-	return &listaEnlazada[T]{
-		primero: nil,
-		ultimo:  nil,
-		largo:   0,
-	}
+	return new(listaEnlazada[T])
 }
 
 func crearNodo[T any](valor T) *nodoLista[T] {
@@ -30,18 +29,17 @@ func crearNodo[T any](valor T) *nodoLista[T] {
 }
 
 func (lista *listaEnlazada[T]) EstaVacia() bool {
-	return lista.largo == 0
+	return lista.largo == 0 && lista.primero == nil && lista.ultimo == nil
 }
 
 func (lista *listaEnlazada[T]) InsertarPrimero(valor T) {
 	nuevoNodo := crearNodo(valor)
-
-	nuevoNodo.siguiente = lista.primero
-	lista.primero = nuevoNodo
-
 	if lista.EstaVacia() {
 		lista.ultimo = nuevoNodo
 	}
+
+	nuevoNodo.siguiente = lista.primero
+	lista.primero = nuevoNodo
 
 	lista.largo++
 }
@@ -77,7 +75,7 @@ func (lista *listaEnlazada[T]) BorrarPrimero() T {
 
 func (lista *listaEnlazada[T]) VerPrimero() T {
 	if lista.EstaVacia() {
-		panic("La lista esta vacia")
+		panic(_PANIC_LISTA_VACIA)
 	}
 
 	return lista.primero.valor
@@ -85,7 +83,7 @@ func (lista *listaEnlazada[T]) VerPrimero() T {
 
 func (lista *listaEnlazada[T]) VerUltimo() T {
 	if lista.EstaVacia() {
-		panic("La lista esta vacia")
+		panic(_PANIC_LISTA_VACIA)
 	}
 
 	return lista.ultimo.valor
@@ -98,19 +96,15 @@ func (lista *listaEnlazada[T]) Largo() int {
 func (lista *listaEnlazada[T]) Iterar(visitar func(T) bool) {
 	actual := lista.primero
 
-	for actual != nil {
-		if !visitar(actual.valor) {
-			break
-		}
+	for actual != nil && visitar(actual.valor) {
 		actual = actual.siguiente
 	}
 }
 
 func (lista *listaEnlazada[T]) Iterador() IteradorLista[T] {
 	return &iteradorExterno[T]{
-		lista:    lista,
-		actual:   lista.primero,
-		anterior: nil,
+		lista:  lista,
+		actual: lista.primero,
 	}
 }
 
@@ -120,14 +114,14 @@ func (iterador *iteradorExterno[T]) HayAlgoMas() bool {
 
 func (iterador *iteradorExterno[T]) VerActual() T {
 	if !iterador.HayAlgoMas() {
-		panic("El iterador termino de iterar")
+		panic(_PANIC_FIN_ITERADOR)
 	}
 	return iterador.actual.valor
 }
 
 func (iterador *iteradorExterno[T]) Avanzar() {
 	if !iterador.HayAlgoMas() {
-		panic("El iterador termino de iterar")
+		panic(_PANIC_FIN_ITERADOR)
 	}
 	iterador.anterior = iterador.actual
 	iterador.actual = iterador.actual.siguiente
@@ -153,7 +147,7 @@ func (iterador *iteradorExterno[T]) Insertar(valor T) {
 
 func (iterador *iteradorExterno[T]) Borrar() T {
 	if !iterador.HayAlgoMas() {
-		panic("El iterador termino de iterar")
+		panic(_PANIC_FIN_ITERADOR)
 	}
 
 	valor := iterador.actual.valor
