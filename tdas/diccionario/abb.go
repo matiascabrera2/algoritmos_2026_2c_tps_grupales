@@ -67,7 +67,7 @@ func (a *abb[K, V]) Pertenece(clave K) bool {
 
 func (a *abb[K, V]) Obtener(clave K) V {
 	nodo := *a.buscarPunteroAlNodo(&a.raiz, clave)
-	if nodo == nil {
+	if !a.Pertenece(clave) {
 		panic(_PANIC_CLAVE_NO_PERTENECE)
 	}
 	return nodo.dato
@@ -76,7 +76,7 @@ func (a *abb[K, V]) Obtener(clave K) V {
 func (a *abb[K, V]) Borrar(clave K) V {
 	enlace := a.buscarPunteroAlNodo(&a.raiz, clave)
 	nodo := *enlace
-	if nodo == nil {
+	if !a.Pertenece(clave) {
 		panic(_PANIC_CLAVE_NO_PERTENECE)
 	}
 
