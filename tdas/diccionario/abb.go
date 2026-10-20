@@ -33,7 +33,7 @@ func CrearABB[K comparable, V any](funcion_cmp func(K, K) int) DiccionarioOrdena
 }
 
 // buscarPunteroAlNodo devuelve el puntero al nodo donde está la clave,
-// o si no está, el enlace vacío donde habría que insertarla.
+// o si no está, el enlace vacío donde habría que insertarla
 func (a *abb[K, V]) buscarPunteroAlNodo(enlace **nodoAbb[K, V], clave K) **nodoAbb[K, V] {
 	if *enlace == nil {
 		return enlace
@@ -88,7 +88,7 @@ func (a *abb[K, V]) Borrar(clave K) V {
 		*enlace = nodo.izquierdo
 	} else {
 		// Dos hijos: el nodo pasa a tener la clave y el dato de su sucesor inmediato
-		// (el mínimo del subárbol derecho), y se desengancha ese nodo del árbol.
+		// (el mínimo del subárbol derecho), y se desengancha ese nodo del árbol
 		enlaceSucesor := &nodo.derecho
 		for (*enlaceSucesor).izquierdo != nil {
 			enlaceSucesor = &(*enlaceSucesor).izquierdo
@@ -116,7 +116,7 @@ func (a *abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V
 }
 
 // iterarRango recorre in-order el subárbol, sin entrar a las ramas que quedan fuera del rango.
-// Devuelve false si la iteración se cortó (visitar devolvió false).
+// Devuelve false si la iteración se cortó
 func (a *abb[K, V]) iterarRango(nodo *nodoAbb[K, V], desde, hasta *K, visitar func(K, V) bool) bool {
 	if nodo == nil {
 		return true
@@ -147,8 +147,6 @@ func (a *abb[K, V]) Iterador() IterDiccionario[K, V] {
 	return a.IteradorRango(nil, nil)
 }
 
-// IteradorRango deja en la pila el camino hasta la primera clave >= desde: el tope es siempre
-// el próximo elemento a visitar.
 func (a *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
 	iter := &iteradorAbb[K, V]{
 		pila:  TDAPila.CrearPilaDinamica[*nodoAbb[K, V]](),
