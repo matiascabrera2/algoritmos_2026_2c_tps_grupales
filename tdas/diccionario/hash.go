@@ -100,7 +100,7 @@ func (h *hashAbierto[K, V]) Pertenece(clave K) bool {
 func (h *hashAbierto[K, V]) Obtener(clave K) V {
 	iter, encontrado := posicionarEnClave(h.tabla[posicion(clave, h.tam)], clave)
 	if !encontrado {
-		panic("La clave no pertenece al diccionario")
+		panic(_PANIC_CLAVE_NO_PERTENECE)
 	}
 	return iter.VerActual().dato
 }
@@ -110,7 +110,7 @@ func (h *hashAbierto[K, V]) Borrar(clave K) V {
 
 	iter, encontrado := posicionarEnClave(bucket, clave)
 	if !encontrado {
-		panic("La clave no pertenece al diccionario")
+		panic(_PANIC_CLAVE_NO_PERTENECE)
 	}
 
 	dato := iter.VerActual().dato
@@ -181,7 +181,7 @@ func (iterador *iteradorExterno[K, V]) HayAlgoMas() bool {
 
 func (iterador *iteradorExterno[K, V]) VerActual() (K, V) {
 	if !iterador.HayAlgoMas() {
-		panic("El iterador termino de iterar")
+		panic(_PANIC_FIN_ITERADOR)
 	}
 	p := iterador.iterLista.VerActual()
 	return p.clave, p.dato
@@ -189,7 +189,7 @@ func (iterador *iteradorExterno[K, V]) VerActual() (K, V) {
 
 func (iterador *iteradorExterno[K, V]) Avanzar() {
 	if !iterador.HayAlgoMas() {
-		panic("El iterador termino de iterar")
+		panic(_PANIC_FIN_ITERADOR)
 	}
 
 	iterador.iterLista.Avanzar()
