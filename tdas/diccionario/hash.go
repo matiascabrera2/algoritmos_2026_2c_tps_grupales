@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	CAPACIDAD_INICIAL  = 8
-	FACTOR_REDIMENSION = 2
-	FACTOR_AGRANDAR    = 2.5
-	FACTOR_ACHICAR     = 0.25
+	_CAPACIDAD_INICIAL  = 8
+	_FACTOR_REDIMENSION = 2
+	_FACTOR_AGRANDAR    = 2.5
+	_FACTOR_ACHICAR     = 0.25
 )
 
 type par[K comparable, V any] struct {
@@ -55,15 +55,16 @@ func crearTabla[K comparable, V any](tam int) []TDALista.Lista[par[K, V]] {
 
 func CrearHash[K comparable, V any]() Diccionario[K, V] {
 	return &hashAbierto[K, V]{
-		tabla: crearTabla[K, V](CAPACIDAD_INICIAL),
-		tam:   CAPACIDAD_INICIAL,
+		tabla: crearTabla[K, V](_CAPACIDAD_INICIAL),
+		tam:   _CAPACIDAD_INICIAL,
 		cant:  0,
 	}
 }
 
 // Devuelve el iterador de la lista parado en el
 // elemento con la clave buscada, junto con true, o false si no está.
-func posicionarEnClave[K comparable, V any](bucket TDALista.Lista[par[K, V]], clave K) (TDALista.IteradorLista[par[K, V]], bool) {
+func posicionarEnClave[K comparable, V any](hash *hashAbierto[K, V], clave K) (TDALista.IteradorLista[par[K, V]], bool) {
+	bucket := hash.tabla[posicion(clave, hash.tam)]
 	iter := bucket.Iterador()
 
 	for iter.HayAlgoMas() {
@@ -77,48 +78,45 @@ func posicionarEnClave[K comparable, V any](bucket TDALista.Lista[par[K, V]], cl
 }
 
 func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
-	bucket := h.tabla[posicion(clave, h.tam)]
 
-	if iter, encontrado := posicionarEnClave(bucket, clave); encontrado {
+	if iter, encontrado := posicionarEnClave(h, clave); encontrado {
 		iter.Borrar()
+		iter.Insertar((par[K, V]{clave: clave, dato: dato}))
 	} else {
+		iter.Insertar((par[K, V]{clave: clave, dato: dato}))
 		h.cant++
 	}
 
-	bucket.InsertarPrimero(par[K, V]{clave: clave, dato: dato})
-
-	if float64(h.cant)/float64(h.tam) >= FACTOR_AGRANDAR {
-		h.redimensionar(h.tam * FACTOR_REDIMENSION)
+	if float64(h.cant)/float64(h.tam) >= _FACTOR_AGRANDAR {
+		h.redimensionar(h.tam * _FACTOR_REDIMENSION)
 	}
 }
 
 func (h *hashAbierto[K, V]) Pertenece(clave K) bool {
-	_, encontrado := posicionarEnClave(h.tabla[posicion(clave, h.tam)], clave)
+	_, encontrado := posicionarEnClave(h, clave)
 	return encontrado
 }
 
 func (h *hashAbierto[K, V]) Obtener(clave K) V {
-	iter, encontrado := posicionarEnClave(h.tabla[posicion(clave, h.tam)], clave)
+	iter, encontrado := posicionarEnClave(h, clave)
 	if !encontrado {
-		panic(_PANIC_CLAVE_NO_PERTENECE)
+		panic("La clave no pertenece al diccionario")
 	}
 	return iter.VerActual().dato
 }
 
 func (h *hashAbierto[K, V]) Borrar(clave K) V {
-	bucket := h.tabla[posicion(clave, h.tam)]
-
-	iter, encontrado := posicionarEnClave(bucket, clave)
+	iter, encontrado := posicionarEnClave(h, clave)
 	if !encontrado {
-		panic(_PANIC_CLAVE_NO_PERTENECE)
+		panic("La clave no pertenece al diccionario")
 	}
 
 	dato := iter.VerActual().dato
 	iter.Borrar()
 	h.cant--
 
-	nuevoTam := h.tam / FACTOR_REDIMENSION
-	if float64(h.cant)/float64(h.tam) <= FACTOR_ACHICAR && nuevoTam >= CAPACIDAD_INICIAL {
+	nuevoTam := h.tam / _FACTOR_REDIMENSION
+	if float64(h.cant)/float64(h.tam) <= _FACTOR_ACHICAR && nuevoTam >= _CAPACIDAD_INICIAL {
 		h.redimensionar(nuevoTam)
 	}
 
@@ -181,7 +179,7 @@ func (iterador *iteradorExterno[K, V]) HayAlgoMas() bool {
 
 func (iterador *iteradorExterno[K, V]) VerActual() (K, V) {
 	if !iterador.HayAlgoMas() {
-		panic(_PANIC_FIN_ITERADOR)
+		panic("El iterador termino de iterar")
 	}
 	p := iterador.iterLista.VerActual()
 	return p.clave, p.dato
@@ -189,7 +187,7 @@ func (iterador *iteradorExterno[K, V]) VerActual() (K, V) {
 
 func (iterador *iteradorExterno[K, V]) Avanzar() {
 	if !iterador.HayAlgoMas() {
-		panic(_PANIC_FIN_ITERADOR)
+		panic("El iterador termino de iterar")
 	}
 
 	iterador.iterLista.Avanzar()
