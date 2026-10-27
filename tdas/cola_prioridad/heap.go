@@ -3,7 +3,7 @@ package cola_prioridad
 const (
 	_PANIC_COLA_VACIA = "La cola esta vacia"
 
-	TAM_INICIAL      = 10
+	TAM_INICIAL      = 8
 	FACTOR_AUMENTO   = 2
 	FACTOR_REDUCCION = 4
 )
