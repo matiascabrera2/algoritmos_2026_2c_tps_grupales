@@ -11,6 +11,9 @@ const (
 	_FACTOR_REDIMENSION = 2
 	_FACTOR_AGRANDAR    = 2.5
 	_FACTOR_ACHICAR     = 0.25
+
+	_PANIC_CLAVE_NO_PERTENECE = "La clave no pertenece al diccionario"
+	_PANIC_FIN_ITERADOR       = "El iterador termino de iterar"
 )
 
 type par[K comparable, V any] struct {
@@ -64,8 +67,8 @@ func CrearHash[K comparable, V any]() Diccionario[K, V] {
 // Devuelve el iterador de la lista parado en el
 // elemento con la clave buscada, junto con true, o false si no está.
 func posicionarEnClave[K comparable, V any](hash *hashAbierto[K, V], clave K) (TDALista.IteradorLista[par[K, V]], bool) {
-	bucket := hash.tabla[posicion(clave, hash.tam)]
-	iter := bucket.Iterador()
+	lista := hash.tabla[posicion(clave, hash.tam)]
+	iter := lista.Iterador()
 
 	for iter.HayAlgoMas() {
 		if iter.VerActual().clave == clave {
@@ -78,14 +81,14 @@ func posicionarEnClave[K comparable, V any](hash *hashAbierto[K, V], clave K) (T
 }
 
 func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
+	iter, encontrado := posicionarEnClave(h, clave)
 
-	if iter, encontrado := posicionarEnClave(h, clave); encontrado {
+	if encontrado {
 		iter.Borrar()
-		iter.Insertar((par[K, V]{clave: clave, dato: dato}))
 	} else {
-		iter.Insertar((par[K, V]{clave: clave, dato: dato}))
 		h.cant++
 	}
+	iter.Insertar(par[K, V]{clave: clave, dato: dato})
 
 	if float64(h.cant)/float64(h.tam) >= _FACTOR_AGRANDAR {
 		h.redimensionar(h.tam * _FACTOR_REDIMENSION)
@@ -100,7 +103,7 @@ func (h *hashAbierto[K, V]) Pertenece(clave K) bool {
 func (h *hashAbierto[K, V]) Obtener(clave K) V {
 	iter, encontrado := posicionarEnClave(h, clave)
 	if !encontrado {
-		panic("La clave no pertenece al diccionario")
+		panic(_PANIC_CLAVE_NO_PERTENECE)
 	}
 	return iter.VerActual().dato
 }
@@ -108,11 +111,10 @@ func (h *hashAbierto[K, V]) Obtener(clave K) V {
 func (h *hashAbierto[K, V]) Borrar(clave K) V {
 	iter, encontrado := posicionarEnClave(h, clave)
 	if !encontrado {
-		panic("La clave no pertenece al diccionario")
+		panic(_PANIC_CLAVE_NO_PERTENECE)
 	}
 
-	dato := iter.VerActual().dato
-	iter.Borrar()
+	dato := iter.Borrar().dato
 	h.cant--
 
 	nuevoTam := h.tam / _FACTOR_REDIMENSION
@@ -130,8 +132,8 @@ func (h *hashAbierto[K, V]) Cantidad() int {
 func (h *hashAbierto[K, V]) redimensionar(nuevoTam int) {
 	nuevaTabla := crearTabla[K, V](nuevoTam)
 
-	for _, bucket := range h.tabla {
-		bucket.Iterar(func(p par[K, V]) bool {
+	for _, lista := range h.tabla {
+		lista.Iterar(func(p par[K, V]) bool {
 			nuevaTabla[posicion(p.clave, nuevoTam)].InsertarPrimero(p)
 			return true
 		})
@@ -179,7 +181,7 @@ func (iterador *iteradorExterno[K, V]) HayAlgoMas() bool {
 
 func (iterador *iteradorExterno[K, V]) VerActual() (K, V) {
 	if !iterador.HayAlgoMas() {
-		panic("El iterador termino de iterar")
+		panic(_PANIC_FIN_ITERADOR)
 	}
 	p := iterador.iterLista.VerActual()
 	return p.clave, p.dato
@@ -187,15 +189,9 @@ func (iterador *iteradorExterno[K, V]) VerActual() (K, V) {
 
 func (iterador *iteradorExterno[K, V]) Avanzar() {
 	if !iterador.HayAlgoMas() {
-		panic("El iterador termino de iterar")
+		panic(_PANIC_FIN_ITERADOR)
 	}
 
 	iterador.iterLista.Avanzar()
-
-	if !iterador.iterLista.HayAlgoMas() {
-		iterador.iterLista = nil
-		iterador.pos++
-	}
-
 	iterador.avanzarHastaElementoValido()
 }
