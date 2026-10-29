@@ -4,11 +4,6 @@ import (
 	TDAPila "tdas/pila"
 )
 
-const (
-	_PANIC_CLAVE_NO_PERTENECE = "La clave no pertenece al diccionario"
-	_PANIC_FIN_ITERADOR       = "El iterador termino de iterar"
-)
-
 type nodoAbb[K comparable, V any] struct {
 	izquierdo *nodoAbb[K, V]
 	derecho   *nodoAbb[K, V]
