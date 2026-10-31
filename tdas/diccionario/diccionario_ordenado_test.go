@@ -110,7 +110,39 @@ func TestUnElemento(t *testing.T) {
 	dic.Guardar(1, "Unico")
 	require.True(t, dic.Pertenece(1))
 	require.True(t, dic.Cantidad() == 1)
-	require.True(t, dic.Obtener(1) == "Unico")
+	require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(2) })
+	require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(2) })
+}
+func TestAgregar(t *testing.T) {
+	dic := crearABBPilotos()
+	require.True(t, dic.Cantidad() == 7)
+	dic.Guardar(11, "PER")
+	require.True(t, dic.Cantidad() == 8)
+	require.True(t, dic.Obtener(11) == "PER")
+}
+
+func TestBorrar(t *testing.T) {
+	dic := crearABBPilotos()
+	require.True(t, dic.Cantidad() == 7)
+	dic.Borrar(22)
+	require.True(t, dic.Cantidad() == 6)
+	require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(22) })
+}
+
+func TestVolumenSinIter(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, int](comparador)
+	for i := 1; i <= VOLUMEN; i++ {
+		dic.Guardar(i, i*2)
+		require.Equal(t, i*2, dic.Obtener(i))
+		require.True(t, dic.Cantidad() == i)
+	}
+	require.True(t, dic.Cantidad() == VOLUMEN)
+	for i := VOLUMEN; i > 0; i-- {
+		require.True(t, dic.Cantidad() == i)
+		dic.Borrar(i)
+		require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(i) })
+	}
+
 }
 
 func TestIteradorRangoABBChico(t *testing.T) {
