@@ -44,7 +44,12 @@ func (a *abb[K, V]) buscarPunteroAlNodo(enlace **nodoAbb[K, V], clave K) **nodoA
 	}
 	return enlace
 }
-
+func (a *abb[K, V]) buscarSucesor(enlaceSucesor **nodoAbb[K, V]) **nodoAbb[K, V] {
+	for (*enlaceSucesor).izquierdo != nil {
+		enlaceSucesor = &(*enlaceSucesor).izquierdo
+	}
+	return enlaceSucesor
+}
 func (a *abb[K, V]) Guardar(clave K, dato V) {
 	enlace := a.buscarPunteroAlNodo(&a.raiz, clave)
 
@@ -84,10 +89,7 @@ func (a *abb[K, V]) Borrar(clave K) V {
 	} else {
 		// Dos hijos: el nodo pasa a tener la clave y el dato de su sucesor inmediato
 		// (el mínimo del subárbol derecho), y se desengancha ese nodo del árbol.
-		enlaceSucesor := &nodo.derecho
-		for (*enlaceSucesor).izquierdo != nil {
-			enlaceSucesor = &(*enlaceSucesor).izquierdo
-		}
+		enlaceSucesor := a.buscarSucesor(&nodo.derecho)
 		sucesor := *enlaceSucesor
 
 		nodo.clave, nodo.dato = sucesor.clave, sucesor.dato
@@ -155,7 +157,9 @@ func (a *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
 
 	for nodo != nil {
 		if desde == nil || a.cmp(nodo.clave, *desde) >= 0 {
-			iter.pila.Apilar(nodo)
+			if hasta == nil || a.cmp(nodo.clave, *hasta) <= 0 {
+				iter.pila.Apilar(nodo)
+			}
 			nodo = nodo.izquierdo
 		} else {
 			nodo = nodo.derecho
@@ -166,7 +170,7 @@ func (a *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
 }
 
 func (it *iteradorAbb[K, V]) HayAlgoMas() bool {
-	return !it.pila.EstaVacia() && (it.hasta == nil || it.cmp(it.pila.VerTope().clave, *it.hasta) <= 0)
+	return !it.pila.EstaVacia() //&& (it.hasta == nil || it.cmp(it.pila.VerTope().clave, *it.hasta) <= 0)
 }
 
 func (it *iteradorAbb[K, V]) VerActual() (K, V) {

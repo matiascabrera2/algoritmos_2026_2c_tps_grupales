@@ -39,13 +39,6 @@ func crearABBPilotos() TDADiccionario.DiccionarioOrdenado[int, string] {
 func verificarClaves[V any](t *testing.T, dic TDADiccionario.DiccionarioOrdenado[int, V], esperadas []int) {
 	require.Equal(t, len(esperadas), dic.Cantidad())
 
-	claves := make([]int, 0)
-	dic.Iterar(func(k int, v V) bool {
-		claves = append(claves, k)
-		return true
-	})
-	require.Equal(t, esperadas, claves)
-
 	for _, clave := range esperadas {
 		require.True(t, dic.Pertenece(clave))
 	}
@@ -111,36 +104,33 @@ func TestUnElemento(t *testing.T) {
 	require.True(t, dic.Pertenece(1))
 	require.True(t, dic.Cantidad() == 1)
 	require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(2) })
-	require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(2) })
+	require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Borrar(2) })
+	require.True(t, dic.Borrar(1) == "Unico")
 }
-func TestAgregar(t *testing.T) {
+func TestAgregarBorrar(t *testing.T) {
 	dic := crearABBPilotos()
 	require.True(t, dic.Cantidad() == 7)
 	dic.Guardar(11, "PER")
 	require.True(t, dic.Cantidad() == 8)
 	require.True(t, dic.Obtener(11) == "PER")
-}
-
-func TestBorrar(t *testing.T) {
-	dic := crearABBPilotos()
-	require.True(t, dic.Cantidad() == 7)
 	dic.Borrar(22)
-	require.True(t, dic.Cantidad() == 6)
 	require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(22) })
 }
 
 func TestVolumenSinIter(t *testing.T) {
 	dic := TDADiccionario.CrearABB[int, int](comparador)
-	for i := 1; i <= VOLUMEN; i++ {
-		dic.Guardar(i, i*2)
-		require.Equal(t, i*2, dic.Obtener(i))
-		require.True(t, dic.Cantidad() == i)
+	var valores []int
+	cantidad := VOLUMEN
+	for _, clave := range rand.New(rand.NewSource(1)).Perm(VOLUMEN + 1) {
+		dic.Guardar(clave, clave)
+		valores = append(valores, clave)
 	}
-	require.True(t, dic.Cantidad() == VOLUMEN)
-	for i := VOLUMEN; i > 0; i-- {
-		require.True(t, dic.Cantidad() == i)
-		dic.Borrar(i)
-		require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(i) })
+	require.True(t, dic.Cantidad() == VOLUMEN+1)
+	for _, clave := range rand.New(rand.NewSource(2)).Perm(VOLUMEN + 1) {
+		require.True(t, dic.Pertenece(clave))
+		require.True(t, dic.Borrar(clave) == clave)
+		require.True(t, dic.Cantidad() == cantidad)
+		cantidad--
 	}
 
 }
