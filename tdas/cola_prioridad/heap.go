@@ -3,9 +3,9 @@ package cola_prioridad
 const (
 	_PANIC_COLA_VACIA = "La cola esta vacia"
 
-	TAM_INICIAL      = 8
-	FACTOR_AUMENTO   = 2
-	FACTOR_REDUCCION = 4
+	_TAM_INICIAL      = 8
+	_FACTOR_AUMENTO   = 2
+	_FACTOR_REDUCCION = 4
 )
 
 type heap[T any] struct {
@@ -15,13 +15,13 @@ type heap[T any] struct {
 }
 
 func CrearHeap[T any](funcion_cmp func(T, T) int) ColaPrioridad[T] {
-	return &heap[T]{datos: make([]T, TAM_INICIAL), cmp: funcion_cmp}
+	return CrearHeapArr(nil, funcion_cmp)
 }
 
 func CrearHeapArr[T any](arreglo []T, funcion_cmp func(T, T) int) ColaPrioridad[T] {
 	capacidad := len(arreglo)
-	if capacidad < TAM_INICIAL {
-		capacidad = TAM_INICIAL
+	if capacidad < _TAM_INICIAL {
+		capacidad = _TAM_INICIAL
 	}
 
 	datos := make([]T, capacidad)
@@ -48,7 +48,7 @@ func (h *heap[T]) VerMax() T {
 
 func (h *heap[T]) Encolar(elemento T) {
 	if h.cantidad == len(h.datos) {
-		h.redimensionar(len(h.datos) * FACTOR_AUMENTO)
+		h.redimensionar(len(h.datos) * _FACTOR_AUMENTO)
 	}
 
 	h.datos[h.cantidad] = elemento
@@ -61,13 +61,10 @@ func (h *heap[T]) Desencolar() T {
 
 	h.cantidad--
 	h.datos[0] = h.datos[h.cantidad]
-
-	var vacio T
-	h.datos[h.cantidad] = vacio // para no retener referencias al elemento que salió
 	downheap(h.datos[:h.cantidad], 0, h.cmp)
 
-	nuevaCapacidad := len(h.datos) / FACTOR_AUMENTO
-	if h.cantidad*FACTOR_REDUCCION <= len(h.datos) && nuevaCapacidad >= TAM_INICIAL {
+	nuevaCapacidad := len(h.datos) / _FACTOR_AUMENTO
+	if h.cantidad*_FACTOR_REDUCCION <= len(h.datos) && nuevaCapacidad >= _TAM_INICIAL {
 		h.redimensionar(nuevaCapacidad)
 	}
 
