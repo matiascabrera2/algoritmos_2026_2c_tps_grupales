@@ -44,12 +44,15 @@ func (a *abb[K, V]) buscarPunteroAlNodo(enlace **nodoAbb[K, V], clave K) **nodoA
 	}
 	return enlace
 }
-func (a *abb[K, V]) buscarSucesor(enlaceSucesor **nodoAbb[K, V]) **nodoAbb[K, V] {
-	for (*enlaceSucesor).izquierdo != nil {
-		enlaceSucesor = &(*enlaceSucesor).izquierdo
+
+// buscarSucesor devuelve el enlace al mínimo del subárbol que cuelga de enlace.
+func buscarSucesor[K comparable, V any](enlace **nodoAbb[K, V]) **nodoAbb[K, V] {
+	for (*enlace).izquierdo != nil {
+		enlace = &(*enlace).izquierdo
 	}
-	return enlaceSucesor
+	return enlace
 }
+
 func (a *abb[K, V]) Guardar(clave K, dato V) {
 	enlace := a.buscarPunteroAlNodo(&a.raiz, clave)
 
@@ -67,7 +70,7 @@ func (a *abb[K, V]) Pertenece(clave K) bool {
 
 func (a *abb[K, V]) Obtener(clave K) V {
 	nodo := *a.buscarPunteroAlNodo(&a.raiz, clave)
-	if !a.Pertenece(clave) {
+	if nodo == nil {
 		panic(_PANIC_CLAVE_NO_PERTENECE)
 	}
 	return nodo.dato
@@ -76,7 +79,7 @@ func (a *abb[K, V]) Obtener(clave K) V {
 func (a *abb[K, V]) Borrar(clave K) V {
 	enlace := a.buscarPunteroAlNodo(&a.raiz, clave)
 	nodo := *enlace
-	if !a.Pertenece(clave) {
+	if nodo == nil {
 		panic(_PANIC_CLAVE_NO_PERTENECE)
 	}
 
@@ -89,7 +92,7 @@ func (a *abb[K, V]) Borrar(clave K) V {
 	} else {
 		// Dos hijos: el nodo pasa a tener la clave y el dato de su sucesor inmediato
 		// (el mínimo del subárbol derecho), y se desengancha ese nodo del árbol.
-		enlaceSucesor := a.buscarSucesor(&nodo.derecho)
+		enlaceSucesor := buscarSucesor(&nodo.derecho)
 		sucesor := *enlaceSucesor
 
 		nodo.clave, nodo.dato = sucesor.clave, sucesor.dato
@@ -144,33 +147,32 @@ func (a *abb[K, V]) Iterador() IterDiccionario[K, V] {
 	return a.IteradorRango(nil, nil)
 }
 
-// IteradorRango deja en la pila el camino hasta la primera clave >= desde: el tope es siempre
-// el próximo elemento a visitar.
 func (a *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
 	iter := &iteradorAbb[K, V]{
 		pila:  TDAPila.CrearPilaDinamica[*nodoAbb[K, V]](),
 		hasta: hasta,
 		cmp:   a.cmp,
 	}
-
-	nodo := a.raiz
-
-	for nodo != nil {
-		if desde == nil || a.cmp(nodo.clave, *desde) >= 0 {
-			if hasta == nil || a.cmp(nodo.clave, *hasta) <= 0 {
-				iter.pila.Apilar(nodo)
-			}
-			nodo = nodo.izquierdo
-		} else {
-			nodo = nodo.derecho
-		}
-	}
+	iter.apilarEnRango(a.raiz, desde)
 
 	return iter
 }
 
+func (it *iteradorAbb[K, V]) apilarEnRango(nodo *nodoAbb[K, V], desde *K) {
+	for nodo != nil {
+		if desde != nil && it.cmp(nodo.clave, *desde) < 0 {
+			nodo = nodo.derecho
+		} else {
+			if it.hasta == nil || it.cmp(nodo.clave, *it.hasta) <= 0 {
+				it.pila.Apilar(nodo)
+			}
+			nodo = nodo.izquierdo
+		}
+	}
+}
+
 func (it *iteradorAbb[K, V]) HayAlgoMas() bool {
-	return !it.pila.EstaVacia() //&& (it.hasta == nil || it.cmp(it.pila.VerTope().clave, *it.hasta) <= 0)
+	return !it.pila.EstaVacia()
 }
 
 func (it *iteradorAbb[K, V]) VerActual() (K, V) {
@@ -187,10 +189,5 @@ func (it *iteradorAbb[K, V]) Avanzar() {
 		panic(_PANIC_FIN_ITERADOR)
 	}
 
-	nodo := it.pila.Desapilar().derecho
-
-	for nodo != nil {
-		it.pila.Apilar(nodo)
-		nodo = nodo.izquierdo
-	}
+	it.apilarEnRango(it.pila.Desapilar().derecho, nil)
 }
