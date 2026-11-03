@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	VOLUMEN                  = 10000
-	PANIC_CLAVE_NO_PERTENECE = "La clave no pertenece al diccionario"
-	PANIC_FIN_ITERADOR       = "El iterador termino de iterar"
+	VOLUMEN = 10000
+
+	_PANIC_CLAVE_NO_PERTENECE = "La clave no pertenece al diccionario"
+	_PANIC_FIN_ITERADOR       = "El iterador termino de iterar"
 )
 
 func comparador(primero, segundo int) int {
@@ -54,8 +55,8 @@ func verificarIterador[V any](t *testing.T, iter TDADiccionario.IterDiccionario[
 	}
 
 	require.False(t, iter.HayAlgoMas())
-	require.PanicsWithValue(t, PANIC_FIN_ITERADOR, func() { iter.VerActual() })
-	require.PanicsWithValue(t, PANIC_FIN_ITERADOR, func() { iter.Avanzar() })
+	require.PanicsWithValue(t, _PANIC_FIN_ITERADOR, func() { iter.VerActual() })
+	require.PanicsWithValue(t, _PANIC_FIN_ITERADOR, func() { iter.Avanzar() })
 }
 
 func verificarRango(t *testing.T, desde, hasta *int, claves []int) {
@@ -88,132 +89,184 @@ func iterarRangoHastaCortar(dic TDADiccionario.DiccionarioOrdenado[int, string],
 	return claves
 }
 
-/* Tests */
+/* Tests sin iteradores */
 
 func TestABBVacio(t *testing.T) {
 	dic := TDADiccionario.CrearABB[string, string](strings.Compare)
 	require.EqualValues(t, 0, dic.Cantidad())
 	require.False(t, dic.Pertenece("A"))
-	require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener("A") })
-	require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Borrar("A") })
+	require.PanicsWithValue(t, _PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener("A") })
+	require.PanicsWithValue(t, _PANIC_CLAVE_NO_PERTENECE, func() { dic.Borrar("A") })
 }
 
 func TestUnElemento(t *testing.T) {
 	dic := TDADiccionario.CrearABB[int, string](comparador)
 	dic.Guardar(1, "Unico")
 	require.True(t, dic.Pertenece(1))
-	require.True(t, dic.Cantidad() == 1)
-	require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(2) })
-	require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Borrar(2) })
-	require.True(t, dic.Borrar(1) == "Unico")
+	require.Equal(t, 1, dic.Cantidad())
+	require.Equal(t, "Unico", dic.Obtener(1))
+	require.False(t, dic.Pertenece(2))
+	require.PanicsWithValue(t, _PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(2) })
+	require.PanicsWithValue(t, _PANIC_CLAVE_NO_PERTENECE, func() { dic.Borrar(2) })
+	require.Equal(t, 1, dic.Cantidad())
+
+	require.Equal(t, "Unico", dic.Borrar(1))
+	require.False(t, dic.Pertenece(1))
+	require.Equal(t, 0, dic.Cantidad())
+	require.PanicsWithValue(t, _PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(1) })
+	require.PanicsWithValue(t, _PANIC_CLAVE_NO_PERTENECE, func() { dic.Borrar(1) })
 }
-func TestAgregarBorrar(t *testing.T) {
+
+func TestGuardarClaveExistenteActualizaElDato(t *testing.T) {
 	dic := crearABBPilotos()
-	require.True(t, dic.Cantidad() == 7)
-	dic.Guardar(11, "PER")
-	require.True(t, dic.Cantidad() == 8)
-	require.True(t, dic.Obtener(11) == "PER")
-	dic.Borrar(22)
-	require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(22) })
+
+	for _, dato := range []string{"ANT", "ALO", "HAM"} {
+		dic.Guardar(22, dato)
+		require.Equal(t, dato, dic.Obtener(22))
+		require.Equal(t, 7, dic.Cantidad())
+	}
+
+	dic.Guardar(3, "RUS")  // la raíz
+	dic.Guardar(43, "BOT") // una hoja
+	require.Equal(t, 7, dic.Cantidad())
+
+	claves := []int{3, 4, 10, 22, 30, 43, 81}
+	datos := []string{"RUS", "NOR", "GAS", "HAM", "LAW", "BOT", "PIA"}
+	for i, clave := range claves {
+		require.True(t, dic.Pertenece(clave))
+		require.Equal(t, datos[i], dic.Obtener(clave))
+	}
+}
+
+func TestClaveInexistenteEnABBNoVacio(t *testing.T) {
+	dic := crearABBPilotos()
+
+	for _, clave := range []int{0, 5, 25, 50, 100} {
+		require.False(t, dic.Pertenece(clave))
+		require.PanicsWithValue(t, _PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(clave) })
+		require.PanicsWithValue(t, _PANIC_CLAVE_NO_PERTENECE, func() { dic.Borrar(clave) })
+		verificarClaves(t, dic, []int{3, 4, 10, 22, 30, 43, 81})
+	}
+}
+
+func TestBorrarHojas(t *testing.T) {
+	dic := crearABBPilotos()
+
+	require.Equal(t, "GAS", dic.Borrar(10))
+	require.False(t, dic.Pertenece(10))
+	verificarClaves(t, dic, []int{3, 4, 22, 30, 43, 81})
+
+	require.Equal(t, "COL", dic.Borrar(43))
+	require.False(t, dic.Pertenece(43))
+	verificarClaves(t, dic, []int{3, 4, 22, 30, 81})
+
+	require.PanicsWithValue(t, _PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(10) })
+	require.PanicsWithValue(t, _PANIC_CLAVE_NO_PERTENECE, func() { dic.Borrar(43) })
+}
+
+func TestBorrarNodoConSoloHijoIzquierdo(t *testing.T) {
+	dic := crearABBPilotos()
+
+	require.Equal(t, "PIA", dic.Borrar(81))
+	require.False(t, dic.Pertenece(81))
+	verificarClaves(t, dic, []int{3, 4, 10, 22, 30, 43})
+	require.Equal(t, "COL", dic.Obtener(43))
+}
+
+func TestBorrarNodoConSoloHijoDerecho(t *testing.T) {
+	dic := crearABBPilotos()
+
+	require.Equal(t, "LAW", dic.Borrar(30))
+	require.False(t, dic.Pertenece(30))
+	verificarClaves(t, dic, []int{3, 4, 10, 22, 43, 81})
+
+	require.Equal(t, "NOR", dic.Borrar(4))
+	require.False(t, dic.Pertenece(4))
+	verificarClaves(t, dic, []int{3, 10, 22, 43, 81})
+}
+
+func TestBorrarNodoConDosHijos(t *testing.T) {
+	dic := crearABBPilotos()
+
+	require.Equal(t, "TSU", dic.Borrar(22))
+	require.False(t, dic.Pertenece(22))
+	verificarClaves(t, dic, []int{3, 4, 10, 30, 43, 81})
+	require.Equal(t, "LAW", dic.Obtener(30))
+	require.Equal(t, "NOR", dic.Obtener(4))
+}
+
+func TestBorrarNodoConDosHijosYSucesorProfundo(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, int](comparador)
+	for _, clave := range []int{50, 30, 70, 60, 80, 55, 57} {
+		dic.Guardar(clave, clave*10)
+	}
+
+	require.Equal(t, 500, dic.Borrar(50))
+	require.False(t, dic.Pertenece(50))
+	verificarClaves(t, dic, []int{30, 55, 57, 60, 70, 80})
+
+	require.Equal(t, 550, dic.Borrar(55))
+	require.False(t, dic.Pertenece(55))
+	verificarClaves(t, dic, []int{30, 57, 60, 70, 80})
+	require.Equal(t, 570, dic.Obtener(57))
+}
+
+func TestBorrarRaizConUnHijo(t *testing.T) {
+	dic := crearABBPilotos()
+
+	require.Equal(t, "VER", dic.Borrar(3))
+	require.False(t, dic.Pertenece(3))
+	verificarClaves(t, dic, []int{4, 10, 22, 30, 43, 81})
+	require.Equal(t, "TSU", dic.Obtener(22))
+}
+
+func TestBorrarTodasLasClavesVaciaElArbol(t *testing.T) {
+	dic := crearABBPilotos()
+	claves := []int{22, 3, 81, 10, 30, 4, 43}
+	datos := []string{"TSU", "VER", "PIA", "GAS", "LAW", "NOR", "COL"}
+
+	for i, clave := range claves {
+		require.Equal(t, datos[i], dic.Borrar(clave))
+		require.False(t, dic.Pertenece(clave))
+		require.Equal(t, len(claves)-i-1, dic.Cantidad())
+		for _, restante := range claves[i+1:] {
+			require.True(t, dic.Pertenece(restante))
+		}
+	}
+
+	require.Equal(t, 0, dic.Cantidad())
+	require.PanicsWithValue(t, _PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(22) })
+	require.PanicsWithValue(t, _PANIC_CLAVE_NO_PERTENECE, func() { dic.Borrar(22) })
+
+	dic.Guardar(5, "NUEVO")
+	verificarClaves(t, dic, []int{5})
+	require.Equal(t, "NUEVO", dic.Obtener(5))
 }
 
 func TestVolumenSinIter(t *testing.T) {
 	dic := TDADiccionario.CrearABB[int, int](comparador)
-	var valores []int
-	cantidad := VOLUMEN
-	for _, clave := range rand.New(rand.NewSource(1)).Perm(VOLUMEN + 1) {
-		dic.Guardar(clave, clave)
-		valores = append(valores, clave)
-	}
-	require.True(t, dic.Cantidad() == VOLUMEN+1)
-	for _, clave := range rand.New(rand.NewSource(2)).Perm(VOLUMEN + 1) {
+
+	// Se inserta y se borra mezclado para que el árbol no quede como una lista
+	for i, clave := range rand.New(rand.NewSource(1)).Perm(VOLUMEN) {
+		dic.Guardar(clave, clave*2)
 		require.True(t, dic.Pertenece(clave))
-		require.True(t, dic.Borrar(clave) == clave)
-		require.True(t, dic.Cantidad() == cantidad)
-		cantidad--
+		require.Equal(t, clave*2, dic.Obtener(clave))
+		require.Equal(t, i+1, dic.Cantidad())
 	}
 
-}
-
-func TestIteradorRangoABBChico(t *testing.T) {
-	dic := crearABBPilotos()
-
-	require.True(t, dic.Cantidad() == 7)
-	inicio := 10
-	fin := 30
-	var pilotos []string
-	dic.IterarRango(&inicio, &fin, func(k int, v string) bool {
-		pilotos = append(pilotos, v)
-		return true
-	})
-
-	require.Equal(t, []string{"GAS", "TSU", "LAW"}, pilotos)
-}
-
-func TestVolumenIteradorInterno(t *testing.T) {
-	dic := TDADiccionario.CrearABB[int, int](comparador)
-
-	// Se inserta mezclado para que no quede como una lista
-	for _, clave := range rand.New(rand.NewSource(1)).Perm(VOLUMEN + 1) {
-		dic.Guardar(clave, clave)
-	}
-	var datos []int
-	var check []int
-	for i := 0; i <= VOLUMEN; i++ {
-		check = append(check, i)
-	}
-	dic.IterarRango(nil, nil, func(k int, v int) bool {
-		datos = append(datos, v)
-		return true
-	})
-	require.Equal(t, check, datos)
-	require.Equal(t, VOLUMEN+1, dic.Cantidad())
-}
-
-func TestCorteDeUnSoloLado(t *testing.T) {
-	dic := crearABBPilotos()
-
-	require.True(t, dic.Cantidad() == 7)
-	inicio := 30
-	var pilotos []string
-	dic.IterarRango(&inicio, nil, func(k int, v string) bool {
-		pilotos = append(pilotos, v)
-		return true
-	})
-
-	require.Equal(t, []string{"LAW", "COL", "PIA"}, pilotos)
-}
-
-func TestIteradorExterno(t *testing.T) {
-	dic := crearABBPilotos()
-	inicio := 10
-	fin := 43
-
-	verificarIterador(t, dic.IteradorRango(&inicio, &fin), []int{10, 22, 30, 43}, []string{"GAS", "TSU", "LAW", "COL"})
-}
-
-func TestOrdenStrings(t *testing.T) {
-	dic := TDADiccionario.CrearABB[string, int](strings.Compare)
-	dic.Guardar("HAM", 7)
-	dic.Guardar("ALO", 2)
-	dic.Guardar("NOR", 1)
-	dic.Guardar("VER", 4)
-	dic.Guardar("FAN", 5)
-	var campeones []string
-	var cantidades []int
-	dic.IterarRango(nil, nil, func(k string, v int) bool {
-		campeones = append(campeones, k)
-		cantidades = append(cantidades, v)
-		return true
-	})
-	require.Equal(t, []string{"ALO", "FAN", "HAM", "NOR", "VER"}, campeones)
-	for i := 0; i < len(campeones); i++ {
-		require.Equal(t, cantidades[i], dic.Obtener(campeones[i]))
+	for i, clave := range rand.New(rand.NewSource(2)).Perm(VOLUMEN) {
+		require.True(t, dic.Pertenece(clave))
+		require.Equal(t, clave*2, dic.Borrar(clave))
+		require.False(t, dic.Pertenece(clave))
+		require.Equal(t, VOLUMEN-i-1, dic.Cantidad())
 	}
 
+	require.Equal(t, 0, dic.Cantidad())
+	require.PanicsWithValue(t, _PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(0) })
+	require.PanicsWithValue(t, _PANIC_CLAVE_NO_PERTENECE, func() { dic.Borrar(0) })
 }
 
-/* Test de Iteración*/
+/* Tests de iteradores */
 
 func TestIteradoresSinRango(t *testing.T) {
 	dic := crearABBPilotos()
@@ -236,6 +289,47 @@ func TestIteradoresSinRango(t *testing.T) {
 		return true
 	})
 	require.Equal(t, claves, porRangoNil)
+}
+
+func TestIteradoresABBVacio(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, string](comparador)
+	inicio, fin := 1, 10
+
+	verificarIterador(t, dic.Iterador(), []int{}, []string{})
+	verificarIterador(t, dic.IteradorRango(&inicio, &fin), []int{}, []string{})
+
+	visitados := 0
+	dic.Iterar(func(k int, v string) bool {
+		visitados++
+		return true
+	})
+	dic.IterarRango(&inicio, &fin, func(k int, v string) bool {
+		visitados++
+		return true
+	})
+	require.Equal(t, 0, visitados)
+}
+
+func TestIteradoresLuegoDeBorrar(t *testing.T) {
+	dic := crearABBPilotos()
+	dic.Borrar(22) // dos hijos
+	dic.Borrar(3)  // la raíz
+	dic.Borrar(43) // una hoja
+
+	inicio, fin := 5, 80
+	verificarIterador(t, dic.Iterador(), []int{4, 10, 30, 81}, []string{"NOR", "GAS", "LAW", "PIA"})
+	verificarIterador(t, dic.IteradorRango(&inicio, &fin), []int{10, 30}, []string{"GAS", "LAW"})
+}
+
+func TestIteradoresLuegoDeBorrarTodo(t *testing.T) {
+	dic := crearABBPilotos()
+	for _, clave := range []int{22, 3, 81, 10, 30, 4, 43} {
+		dic.Borrar(clave)
+	}
+	verificarIterador(t, dic.Iterador(), []int{}, []string{})
+
+	dic.Guardar(5, "NUEVO")
+	verificarIterador(t, dic.Iterador(), []int{5}, []string{"NUEVO"})
 }
 
 func TestIterarSinRangoConCorte(t *testing.T) {
@@ -307,122 +401,93 @@ func TestIteradorRangoCasosBorde(t *testing.T) {
 	verificarRango(t, &inicio, &fin, []int{})
 }
 
-func TestGuardarClaveExistenteActualizaElDato(t *testing.T) {
+func TestIteradorRangoABBChico(t *testing.T) {
 	dic := crearABBPilotos()
+	inicio := 10
+	fin := 30
 
-	for _, dato := range []string{"ANT", "ALO", "HAM"} {
-		dic.Guardar(22, dato)
-		require.Equal(t, dato, dic.Obtener(22))
-		require.Equal(t, 7, dic.Cantidad())
+	var pilotos []string
+
+	dic.IterarRango(&inicio, &fin, func(k int, v string) bool {
+		pilotos = append(pilotos, v)
+		return true
+	})
+
+	require.Equal(t, []string{"GAS", "TSU", "LAW"}, pilotos)
+}
+
+func TestIteradorExterno(t *testing.T) {
+	dic := crearABBPilotos()
+	inicio := 10
+	fin := 43
+
+	verificarIterador(t, dic.IteradorRango(&inicio, &fin), []int{10, 22, 30, 43}, []string{"GAS", "TSU", "LAW", "COL"})
+}
+
+func TestOrdenStrings(t *testing.T) {
+	dic := TDADiccionario.CrearABB[string, int](strings.Compare)
+	dic.Guardar("HAM", 7)
+	dic.Guardar("ALO", 2)
+	dic.Guardar("NOR", 1)
+	dic.Guardar("VER", 4)
+	dic.Guardar("FAN", 5)
+
+	var campeones []string
+	var cantidades []int
+
+	dic.IterarRango(nil, nil, func(k string, v int) bool {
+		campeones = append(campeones, k)
+		cantidades = append(cantidades, v)
+		return true
+	})
+
+	require.Equal(t, []string{"ALO", "FAN", "HAM", "NOR", "VER"}, campeones)
+
+	for i := 0; i < len(campeones); i++ {
+		require.Equal(t, cantidades[i], dic.Obtener(campeones[i]))
 	}
-
-	dic.Guardar(3, "RUS")
-	dic.Guardar(43, "BOT")
-	require.Equal(t, 7, dic.Cantidad())
-
-	verificarIterador(t, dic.Iterador(), []int{3, 4, 10, 22, 30, 43, 81}, []string{"RUS", "NOR", "GAS", "HAM", "LAW", "BOT", "PIA"})
 }
 
-func TestBorrarHojas(t *testing.T) {
-	dic := crearABBPilotos()
-
-	require.Equal(t, "GAS", dic.Borrar(10))
-	require.False(t, dic.Pertenece(10))
-	verificarClaves(t, dic, []int{3, 4, 22, 30, 43, 81})
-
-	require.Equal(t, "COL", dic.Borrar(43))
-	require.False(t, dic.Pertenece(43))
-	verificarClaves(t, dic, []int{3, 4, 22, 30, 81})
-
-	require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(10) })
-}
-
-func TestBorrarNodoConSoloHijoIzquierdo(t *testing.T) {
-	dic := crearABBPilotos()
-
-	require.Equal(t, "PIA", dic.Borrar(81))
-	require.False(t, dic.Pertenece(81))
-	verificarClaves(t, dic, []int{3, 4, 10, 22, 30, 43})
-	require.Equal(t, "COL", dic.Obtener(43))
-}
-
-func TestBorrarNodoConSoloHijoDerecho(t *testing.T) {
-	dic := crearABBPilotos()
-
-	require.Equal(t, "LAW", dic.Borrar(30))
-	require.False(t, dic.Pertenece(30))
-	verificarClaves(t, dic, []int{3, 4, 10, 22, 43, 81})
-
-	require.Equal(t, "NOR", dic.Borrar(4))
-	require.False(t, dic.Pertenece(4))
-	verificarClaves(t, dic, []int{3, 10, 22, 43, 81})
-}
-
-func TestBorrarNodoConDosHijos(t *testing.T) {
-	dic := crearABBPilotos()
-
-	require.Equal(t, "TSU", dic.Borrar(22))
-	require.False(t, dic.Pertenece(22))
-	verificarClaves(t, dic, []int{3, 4, 10, 30, 43, 81})
-	require.Equal(t, "LAW", dic.Obtener(30))
-}
-
-func TestBorrarNodoConDosHijosYSucesorProfundo(t *testing.T) {
+func TestVolumenIteradorInterno(t *testing.T) {
 	dic := TDADiccionario.CrearABB[int, int](comparador)
-	for _, clave := range []int{50, 30, 70, 60, 80, 55, 57} {
-		dic.Guardar(clave, clave*10)
+
+	// Se inserta mezclado para que no quede como una lista
+	for _, clave := range rand.New(rand.NewSource(1)).Perm(VOLUMEN + 1) {
+		dic.Guardar(clave, clave)
 	}
 
-	require.Equal(t, 500, dic.Borrar(50))
-	require.False(t, dic.Pertenece(50))
-	verificarClaves(t, dic, []int{30, 55, 57, 60, 70, 80})
+	var datos []int
+	var check []int
 
-	require.Equal(t, 550, dic.Borrar(55))
-	require.False(t, dic.Pertenece(55))
-	verificarClaves(t, dic, []int{30, 57, 60, 70, 80})
-	require.Equal(t, 570, dic.Obtener(57))
-}
-
-func TestBorrarRaizConUnHijo(t *testing.T) {
-	dic := crearABBPilotos()
-
-	require.Equal(t, "VER", dic.Borrar(3))
-	require.False(t, dic.Pertenece(3))
-	verificarClaves(t, dic, []int{4, 10, 22, 30, 43, 81})
-	require.Equal(t, "TSU", dic.Obtener(22))
-}
-
-func TestBorrarTodasLasClavesVaciaElArbol(t *testing.T) {
-	dic := crearABBPilotos()
-	claves := []int{22, 3, 81, 10, 30, 4, 43}
-	datos := []string{"TSU", "VER", "PIA", "GAS", "LAW", "NOR", "COL"}
-
-	for i, clave := range claves {
-		require.Equal(t, datos[i], dic.Borrar(clave))
-		require.False(t, dic.Pertenece(clave))
-		require.Equal(t, len(claves)-i-1, dic.Cantidad())
-		for _, restante := range claves[i+1:] {
-			require.True(t, dic.Pertenece(restante))
-		}
+	for i := 0; i <= VOLUMEN; i++ {
+		check = append(check, i)
 	}
 
-	require.Equal(t, 0, dic.Cantidad())
-	verificarIterador(t, dic.Iterador(), []int{}, []string{})
-	require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(22) })
-	require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Borrar(22) })
+	dic.IterarRango(nil, nil, func(k int, v int) bool {
+		datos = append(datos, v)
+		return true
+	})
 
-	dic.Guardar(5, "NUEVO")
-	verificarClaves(t, dic, []int{5})
-	require.Equal(t, "NUEVO", dic.Obtener(5))
+	require.Equal(t, check, datos)
+	require.Equal(t, VOLUMEN+1, dic.Cantidad())
 }
 
-func TestClaveInexistenteEnABBNoVacio(t *testing.T) {
-	dic := crearABBPilotos()
+func TestVolumenIteradorExterno(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, int](comparador)
 
-	for _, clave := range []int{0, 5, 25, 50, 100} {
-		require.False(t, dic.Pertenece(clave))
-		require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Obtener(clave) })
-		require.PanicsWithValue(t, PANIC_CLAVE_NO_PERTENECE, func() { dic.Borrar(clave) })
-		verificarClaves(t, dic, []int{3, 4, 10, 22, 30, 43, 81})
+	for _, clave := range rand.New(rand.NewSource(1)).Perm(VOLUMEN + 1) {
+		dic.Guardar(clave, clave*2)
 	}
+
+	iter := dic.Iterador()
+	for esperada := 0; esperada <= VOLUMEN; esperada++ {
+		require.True(t, iter.HayAlgoMas())
+		clave, dato := iter.VerActual()
+		require.Equal(t, esperada, clave)
+		require.Equal(t, esperada*2, dato)
+		iter.Avanzar()
+	}
+	require.False(t, iter.HayAlgoMas())
+	require.PanicsWithValue(t, _PANIC_FIN_ITERADOR, func() { iter.VerActual() })
+	require.PanicsWithValue(t, _PANIC_FIN_ITERADOR, func() { iter.Avanzar() })
 }
